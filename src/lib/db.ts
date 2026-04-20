@@ -2,6 +2,8 @@ import { supabase } from './supabase'
 import { Record } from '@/types'
 import { format } from 'date-fns'
 
+export { supabase }
+
 export async function getRecordsByMonth(year: number, month: number): Promise<Record[]> {
   const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd')
   const endDate = format(new Date(year, month, 0), 'yyyy-MM-dd')
@@ -22,7 +24,6 @@ export async function getRecordsByMonth(year: number, month: number): Promise<Re
 }
 
 export async function getOrCreateRecord(date: string): Promise<Record | null> {
-  // Try to fetch existing record
   const { data: existing } = await supabase
     .from('records')
     .select('*')
@@ -31,7 +32,6 @@ export async function getOrCreateRecord(date: string): Promise<Record | null> {
 
   if (existing) return existing
 
-  // Create new record with all habits true
   const newRecord = {
     date,
     habit1: true,
@@ -51,22 +51,6 @@ export async function getOrCreateRecord(date: string): Promise<Record | null> {
 
   if (error) {
     console.error('Error creating record:', error)
-    return null
-  }
-
-  return data
-}
-
-export async function updateRecord(id: string, updates: Partial<Record>): Promise<Record | null> {
-  const { data, error } = await supabase
-    .from('records')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error updating record:', error)
     return null
   }
 

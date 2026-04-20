@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday } from 'date-fns'
 import { ja } from 'date-fns/locale'
-import { getRecordsByMonth, getOrCreateRecord } from '@/lib/db'
+import { getRecordsByMonth } from '@/lib/db'
 import { Record, getScore, getScoreColor } from '@/types'
 import DayModal from '@/components/DayModal'
 import Summary from '@/components/Summary'
@@ -45,20 +45,24 @@ export default function Home() {
     return records.find(r => r.date === dateStr)
   }
 
-  const handleDayClick = async (date: Date) => {
+  const handleDayClick = (date: Date) => {
     setSelectedDate(date)
     const dateStr = format(date, 'yyyy-MM-dd')
-    let record = records.find(r => r.date === dateStr)
-    if (!record) {
-      record = await getOrCreateRecord(dateStr) || undefined
-      if (record) setRecords(prev => [...prev, record!])
-    }
+    const record = records.find(r => r.date === dateStr)
     setSelectedRecord(record || null)
   }
 
   const handleRecordUpdate = (updated: Record) => {
-    setRecords(prev => prev.map(r => r.id === updated.id ? updated : r))
+    setRecords(prev => {
+      const exists = prev.find(r => r.id === updated.id)
+      if (exists) return prev.map(r => r.id === updated.id ? updated : r)
+      return [...prev, updated]
+    })
     setSelectedRecord(updated)
+  }
+
+  const handleRecordDelete = (dateStr: string) => {
+    setRecords(prev => prev.filter(r => r.date !== dateStr))
   }
 
   const handleCloseModal = () => {
@@ -75,7 +79,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-cream">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-cream/90 backdrop-blur-sm border-b border-sage-100">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div>
@@ -92,7 +95,6 @@ export default function Home() {
       </header>
 
       <main className="max-w-md mx-auto px-4 pb-8">
-        {/* Month nav */}
         <div className="flex items-center justify-between py-4">
           <button onClick={() => setCurrentDate(new Date(year, month - 2, 1))}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-sage-100 text-sage-600 active:bg-sage-200 text-xl">‹</button>
@@ -104,7 +106,6 @@ export default function Home() {
             className="w-10 h-10 flex items-center justify-center rounded-full bg-sage-100 text-sage-600 active:bg-sage-200 text-xl">›</button>
         </div>
 
-        {/* Stats bar */}
         {totalDays > 0 && (
           <div className="flex justify-center mb-4">
             <div className="flex items-center gap-4 bg-white rounded-2xl px-5 py-2.5 shadow-sm border border-sage-100">
@@ -121,7 +122,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Weekday headers */}
         <div className="grid grid-cols-7 mb-1">
           {WEEKDAYS.map((day, i) => (
             <div key={day} className={`text-center text-xs font-medium py-1.5 ${i === 0 ? 'text-blush-500' : i === 6 ? 'text-blue-400' : 'text-sage-400'}`}>
@@ -130,16 +130,15 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Calendar */}
         {loading ? (
-          <div className="grid grid-cols-7 gap-0.5">
+          <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="aspect-square min-h-[80px] rounded-xl bg-sage-50 animate-pulse" />
+              <div key={i} className="aspect-square min-h-[44px] rounded-xl bg-sage-50 animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-0.5">
-            {Array.from({ length: startPadding }).map((_, i) => <div key={`p${i}`} className="aspect-square min-h-[80px]" />)}
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: startPadding }).map((_, i) => <div key={`p${i}`} className="aspect-square min-h-[44px]" />)}
             {days.map((day) => {
               const record = getRecordForDate(day)
               const score = record ? getScore(record) : null
@@ -159,7 +158,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Legend */}
         <div className="flex items-center justify-center gap-4 mt-4">
           {[
             { color: 'bg-sage-400', label: '5〜6' },
@@ -181,6 +179,7 @@ export default function Home() {
           record={selectedRecord}
           onClose={handleCloseModal}
           onUpdate={handleRecordUpdate}
+          onDelete={handleRecordDelete}
         />
       )}
       {showSummary && (
@@ -220,7 +219,7 @@ function DayCell({ day, dayOfWeek, score, colorKey, isToday, onClick }: DayCellP
   return (
     <button
       onClick={onClick}
-      className={`calendar-cell aspect-square min-h-[80px] rounded-xl border ${bg} flex flex-col items-center justify-center gap-0.5 relative ${isToday ? 'ring-2 ring-sage-500 ring-offset-1' : ''}`}
+      className={`calendar-cell aspect-square min-h-[44px] rounded-xl border ${bg} flex flex-col items-center justify-center gap-0.5 relative ${isToday ? 'ring-2 ring-sage-500 ring-offset-1' : ''}`}
     >
       {isToday && <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-sage-500 today-pulse" />}
       <span className={`text-xs font-medium leading-none ${dayText} ${isToday ? 'font-bold' : ''}`}>{day}</span>

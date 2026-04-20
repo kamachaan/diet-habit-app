@@ -4,23 +4,18 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { Record, HABITS, HabitKey, getScore, getScoreColor } from '@/types'
-import { upsertRecord } from '@/lib/db'
+import { upsertRecord, supabase } from '@/lib/db'
 
 interface Props {
   date: Date
   record: Record | null
   onClose: () => void
   onUpdate: (record: Record) => void
+  onDelete: (date: string) => void
 }
 
-export default function DayModal({ date, record, onClose, onUpdate }: Props) {
+export default function DayModal({ date, record, onClose, onUpdate, onDelete }: Props) {
   const dateStr = format(date, 'yyyy-MM-dd')
-
-  const defaultState = {
-    habit1: true, habit2: true, habit3: true,
-    habit4: true, habit5: true, habit6: true,
-    memo: '',
-  }
 
   const [habits, setHabits] = useState({
     habit1: record?.habit1 ?? true,
@@ -33,6 +28,7 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
   const [memo, setMemo] = useState(record?.memo || '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (record) {
@@ -63,12 +59,8 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
     : colorKey === 'yellow' ? '👍 まずまずです'
     : '💪 明日がんばろう'
 
-  const toggleHabit = async (key: HabitKey) => {
-    const newHabits = { ...habits, [key]: !habits[key] }
-    setHabits(newHabits)
-    // Auto-save on toggle
-    const updated = await upsertRecord(dateStr, { ...newHabits, memo })
-    if (updated) onUpdate(updated)
+  const toggleHabit = (key: HabitKey) => {
+    setHabits(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
   const handleSave = async () => {
@@ -78,7 +70,24 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
     if (updated) {
       onUpdate(updated)
       setSaved(true)
-      setTimeout(() => setSaved(false), 1500)
+      setTimeout(() => {
+        setSaved(false)
+        onClose()
+      }, 1000)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!record) {
+      onClose()
+      return
+    }
+    setDeleting(true)
+    const { error } = await supabase.from('records').delete().eq('id', record.id)
+    setDeleting(false)
+    if (!error) {
+      onDelete(dateStr)
+      onClose()
     }
   }
 
@@ -88,12 +97,10 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-md bg-cream rounded-t-3xl shadow-2xl animate-slide-up safe-bottom">
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-sage-200" />
         </div>
 
-        {/* Date & Score header */}
         <div className="px-5 pt-2 pb-4 border-b border-sage-100">
           <div className="flex items-center justify-between">
             <div>
@@ -108,7 +115,6 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
             </div>
           </div>
 
-          {/* Score bar */}
           <div className="mt-3 h-2 bg-sage-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
@@ -121,7 +127,6 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
           </div>
         </div>
 
-        {/* Habit list */}
         <div className="px-4 py-3 space-y-2 overflow-y-auto max-h-[50vh]">
           {HABITS.map(({ key, label, detail, emoji }) => {
             const checked = habits[key]
@@ -135,7 +140,6 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
                     : 'bg-white border-sage-100 opacity-60'
                 }`}
               >
-                {/* Toggle circle */}
                 <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${
                   checked
                     ? 'bg-sage-500 border-sage-500'
@@ -147,7 +151,6 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
                     </svg>
                   )}
                 </div>
-
                 <div className="flex-1 text-left">
                   <div className={`text-sm font-medium ${checked ? 'text-sage-700' : 'text-sage-400'}`}>
                     <span className="mr-1">{emoji}</span>{label}
@@ -159,7 +162,6 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
           })}
         </div>
 
-        {/* Memo */}
         <div className="px-4 pb-3">
           <div className="text-xs font-medium text-sage-500 mb-1.5 flex items-center gap-1">
             <span>📝</span> メモ（任意）
@@ -173,18 +175,24 @@ export default function DayModal({ date, record, onClose, onUpdate }: Props) {
           />
         </div>
 
-        {/* Save button */}
-        <div className="px-4 pb-6">
+        <div className="px-4 pb-6 flex gap-2">
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="py-4 px-5 rounded-2xl font-bold text-base bg-blush-100 text-blush-500 active:opacity-80 disabled:opacity-60"
+          >
+            {deleting ? '削除中...' : '🗑️'}
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`w-full py-4 rounded-2xl font-bold text-base transition-all ${
+            className={`flex-1 py-4 rounded-2xl font-bold text-base transition-all ${
               saved
                 ? 'bg-sage-400 text-white'
                 : 'bg-sage-500 text-white active:bg-sage-600'
             } disabled:opacity-60`}
           >
-            {saving ? '保存中...' : saved ? '✓ 保存しました！' : 'メモを保存する'}
+            {saving ? '保存中...' : saved ? '✓ 保存しました！' : '保存する'}
           </button>
         </div>
       </div>
