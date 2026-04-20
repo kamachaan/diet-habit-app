@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cream: #faf8f4;
+  --sage-50: #f4f7f4;
+  --sage-100: #e3ece3;
+  --sage-200: #c8d9c8;
+  --sage-400: #729f72;
+  --sage-500: #4e7c4e;
+  --sage-600: #3a6139;
+  --warm-100: #fef3e2;
+  --warm-500: #f59e0b;
+  --blush-100: #fee2e2;
+  --blush-500: #ef4444;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  overscroll-behavior: none;
+}
+
+body {
+  background-color: var(--cream);
+  background-image: 
+    radial-gradient(circle at 20% 10%, rgba(114, 159, 114, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(78, 124, 78, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sage-200);
+  border-radius: 10px;
+}
+
+/* Smooth transitions for habit toggles */
+.habit-toggle {
+  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.habit-toggle:active {
+  transform: scale(0.94);
+}
+
+/* Calendar cell press effect */
+.calendar-cell {
+  transition: all 0.12s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.calendar-cell:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+/* Score dot pulse for today */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.today-pulse {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Modal backdrop blur */
+.modal-backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Textarea */
+textarea {
+  resize: none;
+}
+
+/* Safe area padding for mobile */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
