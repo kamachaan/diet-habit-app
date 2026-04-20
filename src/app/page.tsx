@@ -134,12 +134,12 @@ export default function Home() {
         {loading ? (
           <div className="grid grid-cols-7 gap-0.5">
             {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl bg-sage-50 animate-pulse" />
+              <div key={i} className="aspect-square min-h-[80px] rounded-xl bg-sage-50 animate-pulse" />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-7 gap-0.5">
-            {Array.from({ length: startPadding }).map((_, i) => <div key={`p${i}`} className="aspect-square" />)}
+            {Array.from({ length: startPadding }).map((_, i) => <div key={`p${i}`} className="aspect-square min-h-[80px]" />)}
             {days.map((day) => {
               const record = getRecordForDate(day)
               const score = record ? getScore(record) : null
@@ -220,7 +220,7 @@ function DayCell({ day, dayOfWeek, score, colorKey, isToday, onClick }: DayCellP
   return (
     <button
       onClick={onClick}
-      className={`calendar-cell aspect-square rounded-xl border ${bg} flex flex-col items-center justify-center gap-0.5 relative ${isToday ? 'ring-2 ring-sage-500 ring-offset-1' : ''}`}
+      className={`calendar-cell aspect-square min-h-[80px] rounded-xl border ${bg} flex flex-col items-center justify-center gap-0.5 relative ${isToday ? 'ring-2 ring-sage-500 ring-offset-1' : ''}`}
     >
       {isToday && <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-sage-500 today-pulse" />}
       <span className={`text-xs font-medium leading-none ${dayText} ${isToday ? 'font-bold' : ''}`}>{day}</span>
